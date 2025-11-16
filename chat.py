@@ -9,6 +9,7 @@ import inspect
 from typing import Callable, List, Optional, Any, Dict
 from dotenv import load_dotenv
 from logger import APILogger
+from http_logger import create_logging_client
 
 # Load environment variables from .env file
 load_dotenv()
@@ -67,7 +68,7 @@ class Chat:
     Chat class that maintains conversation history and supports tool execution.
     """
 
-    def __init__(self, model: str = "claude-sonnet-4-5-20250929", tools: Optional[List[Callable]] = None, enable_logging: bool = True):
+    def __init__(self, model: str = "claude-sonnet-4-5-20250929", tools: Optional[List[Callable]] = None, enable_logging: bool = True, enable_http_logging: bool = True):
         """
         Initialize Chat instance.
 
@@ -75,13 +76,22 @@ class Chat:
             model: Claude model to use
             tools: List of tool functions to make available
             enable_logging: Enable comprehensive API logging
+            enable_http_logging: Enable HTTP-level request/response logging
         """
-        self.c = anthropic.Anthropic()
+        self.logger = APILogger() if enable_logging else None
+
+        # Create Anthropic client with optional HTTP logging
+        if enable_logging and enable_http_logging:
+            # Create custom HTTP client with logging
+            http_client = create_logging_client(logger=self.logger)
+            self.c = anthropic.Anthropic(http_client=http_client)
+        else:
+            self.c = anthropic.Anthropic()
+
         self.model = model
         self.h = []  # Conversation history
         self.tools = {}
         self.tool_schemas = []
-        self.logger = APILogger() if enable_logging else None
 
         if tools:
             for tool in tools:

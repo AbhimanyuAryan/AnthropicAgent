@@ -393,3 +393,143 @@ class APILogger:
         self.logger.info(f"SESSION SUMMARY")
         self.logger.info(f"{separator}")
         self.logger.info(f"Total API requests: {self.request_count}")
+
+    def log_http_request(self, request_id: int, method: str, url: str, headers: dict, body: str = None):
+        """
+        Log raw HTTP request details.
+
+        Args:
+            request_id: Unique request identifier
+            method: HTTP method (GET, POST, etc.)
+            url: Request URL
+            headers: Request headers
+            body: Request body (if any)
+        """
+        separator = "=" * 100
+        header = f"\n{separator}\nHTTP REQUEST #{request_id}\n{separator}"
+
+        log_message = [header]
+        log_message.append(f"\n┌─ HTTP Request Line")
+        log_message.append(f"│  {method} {url}")
+        log_message.append(f"│  Timestamp: {datetime.now().isoformat()}")
+
+        # Log request headers
+        log_message.append(f"\n├─ Request Headers ({len(headers)} headers)")
+        for key, value in headers.items():
+            # Mask sensitive headers
+            if key.lower() in ['authorization', 'x-api-key', 'cookie']:
+                value = f"{'*' * 8}...{value[-4:]}" if len(value) > 4 else "***"
+            log_message.append(f"│  {key}: {value}")
+
+        # Log request body
+        if body:
+            log_message.append(f"\n└─ Request Body ({len(body)} bytes)")
+            try:
+                # Try to parse and pretty-print JSON
+                body_json = json.loads(body)
+                formatted_body = json.dumps(body_json, indent=2)
+                for line in formatted_body.split('\n'):
+                    log_message.append(f"   {line}")
+            except json.JSONDecodeError:
+                # If not JSON, log as-is (truncate if too long)
+                if len(body) > 5000:
+                    log_message.append(f"   {body[:5000]}...")
+                    log_message.append(f"   ... (truncated, total {len(body)} bytes)")
+                else:
+                    for line in body.split('\n'):
+                        log_message.append(f"   {line}")
+        else:
+            log_message.append(f"\n└─ Request Body")
+            log_message.append(f"   (empty)")
+
+        full_log = "\n".join(log_message)
+        self.logger.info(full_log)
+
+        # Also log to API-specific handler
+        api_logger = logging.getLogger(f"{self.logger.name}.api")
+        if self.api_handler not in api_logger.handlers:
+            api_logger.addHandler(self.api_handler)
+        api_logger.setLevel(logging.INFO)
+        api_logger.propagate = False
+        api_logger.info(full_log)
+
+    def log_http_response(self, request_id: int, status_code: int, headers: dict, body: str = None, elapsed_time: float = None):
+        """
+        Log raw HTTP response details.
+
+        Args:
+            request_id: Unique request identifier (matches request)
+            status_code: HTTP status code
+            headers: Response headers
+            body: Response body (if any)
+            elapsed_time: Request duration in seconds
+        """
+        separator = "=" * 100
+        header = f"\n{separator}\nHTTP RESPONSE #{request_id}\n{separator}"
+
+        log_message = [header]
+        log_message.append(f"\n┌─ HTTP Status Line")
+        log_message.append(f"│  Status Code: {status_code}")
+        log_message.append(f"│  Timestamp: {datetime.now().isoformat()}")
+        if elapsed_time is not None:
+            log_message.append(f"│  Elapsed Time: {elapsed_time:.3f}s ({elapsed_time*1000:.0f}ms)")
+
+        # Log response headers
+        log_message.append(f"\n├─ Response Headers ({len(headers)} headers)")
+        for key, value in headers.items():
+            log_message.append(f"│  {key}: {value}")
+
+        # Log response body
+        if body:
+            log_message.append(f"\n└─ Response Body ({len(body)} bytes)")
+            try:
+                # Try to parse and pretty-print JSON
+                body_json = json.loads(body)
+                formatted_body = json.dumps(body_json, indent=2)
+                for line in formatted_body.split('\n'):
+                    log_message.append(f"   {line}")
+            except json.JSONDecodeError:
+                # If not JSON, log as-is (truncate if too long)
+                if len(body) > 5000:
+                    log_message.append(f"   {body[:5000]}...")
+                    log_message.append(f"   ... (truncated, total {len(body)} bytes)")
+                else:
+                    for line in body.split('\n'):
+                        log_message.append(f"   {line}")
+        else:
+            log_message.append(f"\n└─ Response Body")
+            log_message.append(f"   (empty)")
+
+        full_log = "\n".join(log_message)
+        self.logger.info(full_log)
+
+        # Also log to API-specific handler
+        api_logger = logging.getLogger(f"{self.logger.name}.api")
+        if self.api_handler not in api_logger.handlers:
+            api_logger.addHandler(self.api_handler)
+        api_logger.setLevel(logging.INFO)
+        api_logger.propagate = False
+        api_logger.info(full_log)
+
+    def log_http_error(self, request_id: int, error: str, elapsed_time: float = None):
+        """
+        Log HTTP request error.
+
+        Args:
+            request_id: Unique request identifier
+            error: Error message
+            elapsed_time: Time elapsed before error
+        """
+        separator = "=" * 100
+        header = f"\n{separator}\nHTTP ERROR #{request_id}\n{separator}"
+
+        log_message = [header]
+        log_message.append(f"\n┌─ Error Details")
+        log_message.append(f"│  Timestamp: {datetime.now().isoformat()}")
+        if elapsed_time is not None:
+            log_message.append(f"│  Elapsed Time: {elapsed_time:.3f}s")
+        log_message.append(f"\n└─ Error Message")
+        log_message.append(f"   {error}")
+
+        full_log = "\n".join(log_message)
+        self.logger.error(full_log)

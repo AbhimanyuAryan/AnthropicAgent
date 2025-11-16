@@ -1,0 +1,42 @@
+
+{"timestamp": "2025-11-16 17:26:27", "level": "INFO", "logger": "TestLogger.tools"}
+
+--------------------------------------------------------------------------------
+TOOL EXECUTION: get_weather [SUCCESS]
+--------------------------------------------------------------------------------
+
+┌─ Execution Details
+│  ├─ Tool: get_weather
+│  ├─ Timestamp: 2025-11-16T17:26:27.872571
+│  └─ Status: SUCCESS
+
+├─ Input Parameters
+│  {
+│    "location": "Tokyo"
+│  }
+
+└─ Output
+   {'temperature': 22, 'condition': 'Sunny'}
+====================================================================================================
+
+{"timestamp": "2025-11-16 17:26:27", "level": "ERROR", "logger": "TestLogger.tools"}
+
+--------------------------------------------------------------------------------
+TOOL EXECUTION: calculate [ERROR]
+--------------------------------------------------------------------------------
+
+┌─ Execution Details
+│  ├─ Tool: calculate
+│  ├─ Timestamp: 2025-11-16T17:26:27.872808
+│  └─ Status: ERROR
+
+├─ Input Parameters
+│  {
+│    "operation": "divide",
+│    "a": 10,
+│    "b": 0
+│  }
+
+└─ Error Details
+   Division by zero error
+====================================================================================================

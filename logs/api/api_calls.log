@@ -1,0 +1,392 @@
+
+{"timestamp": "2025-11-16 17:26:27", "level": "INFO", "logger": "TestLogger.api"}
+================================================================================
+API REQUEST #1
+================================================================================
+
+┌─ Request Metadata
+│  {
+│    "request_number": 1,
+│    "timestamp": "2025-11-16T17:26:27.872214",
+│    "model": "claude-3-5-sonnet-20241022",
+│    "max_tokens": 1024,
+│    "num_messages": 1,
+│    "num_tools": 1
+│  }
+
+├─ Tools Available (1)
+│  ├─ get_weather
+│  │  └─ Get weather information for a location
+
+└─ Conversation Messages (1)
+   └─ Message 1/1 [user]
+      {
+        "role": "user",
+        "content": "What's the weather like?"
+      }
+====================================================================================================
+
+{"timestamp": "2025-11-16 18:27:58", "level": "INFO", "logger": "ClaudeAPI.api"}
+================================================================================
+API REQUEST #1
+================================================================================
+
+┌─ Request Metadata
+│  {
+│    "request_number": 1,
+│    "timestamp": "2025-11-16T18:27:58.507848",
+│    "model": "claude-3-5-sonnet-20241022",
+│    "max_tokens": 4096,
+│    "num_messages": 1,
+│    "num_tools": 0
+│  }
+
+└─ Conversation Messages (1)
+   └─ Message 1/1 [user]
+      {
+        "role": "user",
+        "content": "What is the capital of France? Give me a very brief answer."
+      }
+====================================================================================================
+
+{"timestamp": "2025-11-16 18:27:58", "level": "INFO", "logger": "ClaudeAPI.api"}
+
+====================================================================================================
+HTTP REQUEST #1
+====================================================================================================
+
+┌─ HTTP Request Line
+│  POST https://api.anthropic.com/v1/messages
+│  Timestamp: 2025-11-16T18:27:58.563339
+
+├─ Request Headers (19 headers)
+│  host: api.anthropic.com
+│  accept-encoding: gzip, deflate
+│  connection: keep-alive
+│  x-stainless-timeout: 600
+│  accept: application/json
+│  content-type: application/json
+│  user-agent: Anthropic/Python 0.73.0
+│  x-stainless-lang: python
+│  x-stainless-package-version: 0.73.0
+│  x-stainless-os: Windows
+│  x-stainless-arch: other:amd64
+│  x-stainless-runtime: CPython
+│  x-stainless-runtime-version: 3.13.9
+│  x-api-key: ********...WgAA
+│  x-stainless-async: false
+│  anthropic-version: 2023-06-01
+│  x-stainless-retry-count: 0
+│  x-stainless-read-timeout: 600
+│  content-length: 157
+
+└─ Request Body (157 bytes)
+   {
+     "max_tokens": 4096,
+     "messages": [
+       {
+         "role": "user",
+         "content": "What is the capital of France? Give me a very brief answer."
+       }
+     ],
+     "model": "claude-3-5-sonnet-20241022"
+   }
+====================================================================================================
+
+{"timestamp": "2025-11-16 18:27:59", "level": "INFO", "logger": "ClaudeAPI.api"}
+
+====================================================================================================
+HTTP REQUEST #2
+====================================================================================================
+
+┌─ HTTP Request Line
+│  POST https://api.anthropic.com/v1/messages
+│  Timestamp: 2025-11-16T18:27:59.298917
+
+├─ Request Headers (19 headers)
+│  host: api.anthropic.com
+│  accept-encoding: gzip, deflate
+│  connection: keep-alive
+│  x-stainless-timeout: 600
+│  accept: application/json
+│  content-type: application/json
+│  user-agent: Anthropic/Python 0.73.0
+│  x-stainless-lang: python
+│  x-stainless-package-version: 0.73.0
+│  x-stainless-os: Windows
+│  x-stainless-arch: other:amd64
+│  x-stainless-runtime: CPython
+│  x-stainless-runtime-version: 3.13.9
+│  x-api-key: ********...WgAA
+│  x-stainless-async: false
+│  anthropic-version: 2023-06-01
+│  x-stainless-retry-count: 1
+│  x-stainless-read-timeout: 600
+│  content-length: 157
+
+└─ Request Body (157 bytes)
+   {
+     "max_tokens": 4096,
+     "messages": [
+       {
+         "role": "user",
+         "content": "What is the capital of France? Give me a very brief answer."
+       }
+     ],
+     "model": "claude-3-5-sonnet-20241022"
+   }
+====================================================================================================
+
+{"timestamp": "2025-11-16 18:28:00", "level": "INFO", "logger": "ClaudeAPI.api"}
+
+====================================================================================================
+HTTP REQUEST #3
+====================================================================================================
+
+┌─ HTTP Request Line
+│  POST https://api.anthropic.com/v1/messages
+│  Timestamp: 2025-11-16T18:28:00.357581
+
+├─ Request Headers (19 headers)
+│  host: api.anthropic.com
+│  accept-encoding: gzip, deflate
+│  connection: keep-alive
+│  x-stainless-timeout: 600
+│  accept: application/json
+│  content-type: application/json
+│  user-agent: Anthropic/Python 0.73.0
+│  x-stainless-lang: python
+│  x-stainless-package-version: 0.73.0
+│  x-stainless-os: Windows
+│  x-stainless-arch: other:amd64
+│  x-stainless-runtime: CPython
+│  x-stainless-runtime-version: 3.13.9
+│  x-api-key: ********...WgAA
+│  x-stainless-async: false
+│  anthropic-version: 2023-06-01
+│  x-stainless-retry-count: 2
+│  x-stainless-read-timeout: 600
+│  content-length: 157
+
+└─ Request Body (157 bytes)
+   {
+     "max_tokens": 4096,
+     "messages": [
+       {
+         "role": "user",
+         "content": "What is the capital of France? Give me a very brief answer."
+       }
+     ],
+     "model": "claude-3-5-sonnet-20241022"
+   }
+====================================================================================================
+
+{"timestamp": "2025-11-16 18:29:52", "level": "INFO", "logger": "ClaudeAPI.api"}
+================================================================================
+API REQUEST #1
+================================================================================
+
+┌─ Request Metadata
+│  {
+│    "request_number": 1,
+│    "timestamp": "2025-11-16T18:29:52.945509",
+│    "model": "claude-3-5-sonnet-20241022",
+│    "max_tokens": 4096,
+│    "num_messages": 1,
+│    "num_tools": 0
+│  }
+
+└─ Conversation Messages (1)
+   └─ Message 1/1 [user]
+      {
+        "role": "user",
+        "content": "What is the capital of France? Give me a very brief answer."
+      }
+====================================================================================================
+
+{"timestamp": "2025-11-16 18:29:53", "level": "INFO", "logger": "ClaudeAPI.api"}
+
+====================================================================================================
+HTTP REQUEST #1
+====================================================================================================
+
+┌─ HTTP Request Line
+│  POST https://api.anthropic.com/v1/messages
+│  Timestamp: 2025-11-16T18:29:53.014515
+
+├─ Request Headers (19 headers)
+│  host: api.anthropic.com
+│  accept-encoding: gzip, deflate
+│  connection: keep-alive
+│  x-stainless-timeout: 600
+│  accept: application/json
+│  content-type: application/json
+│  user-agent: Anthropic/Python 0.73.0
+│  x-stainless-lang: python
+│  x-stainless-package-version: 0.73.0
+│  x-stainless-os: Windows
+│  x-stainless-arch: other:amd64
+│  x-stainless-runtime: CPython
+│  x-stainless-runtime-version: 3.13.9
+│  x-api-key: ********...WgAA
+│  x-stainless-async: false
+│  anthropic-version: 2023-06-01
+│  x-stainless-retry-count: 0
+│  x-stainless-read-timeout: 600
+│  content-length: 157
+
+└─ Request Body (157 bytes)
+   {
+     "max_tokens": 4096,
+     "messages": [
+       {
+         "role": "user",
+         "content": "What is the capital of France? Give me a very brief answer."
+       }
+     ],
+     "model": "claude-3-5-sonnet-20241022"
+   }
+====================================================================================================
+
+{"timestamp": "2025-11-16 18:29:53", "level": "INFO", "logger": "ClaudeAPI.api"}
+
+====================================================================================================
+HTTP RESPONSE #1
+====================================================================================================
+
+┌─ HTTP Status Line
+│  Status Code: 404
+│  Timestamp: 2025-11-16T18:29:53.229247
+│  Elapsed Time: 0.215s (215ms)
+
+├─ Response Headers (14 headers)
+│  date: Sun, 16 Nov 2025 18:29:52 GMT
+│  content-type: application/json
+│  transfer-encoding: chunked
+│  connection: keep-alive
+│  content-encoding: gzip
+│  x-should-retry: false
+│  request-id: req_011CVC3UqidEQfL8Btfk1q6p
+│  strict-transport-security: max-age=31536000; includeSubDomains; preload
+│  anthropic-organization-id: e6b054e6-d5f7-4c0c-a6ba-e957cccedb38
+│  x-envoy-upstream-service-time: 33
+│  cf-cache-status: DYNAMIC
+│  x-robots-tag: none
+│  server: cloudflare
+│  cf-ray: 99f90e6a5a885f9a-LIS
+
+└─ Response Body (141 bytes)
+   {
+     "type": "error",
+     "error": {
+       "type": "not_found_error",
+       "message": "model: claude-3-5-sonnet-20241022"
+     },
+     "request_id": "req_011CVC3UqidEQfL8Btfk1q6p"
+   }
+====================================================================================================
+
+{"timestamp": "2025-11-16 18:30:29", "level": "INFO", "logger": "ClaudeAPI.api"}
+================================================================================
+API REQUEST #1
+================================================================================
+
+┌─ Request Metadata
+│  {
+│    "request_number": 1,
+│    "timestamp": "2025-11-16T18:30:29.524601",
+│    "model": "claude-3-5-sonnet-20240620",
+│    "max_tokens": 4096,
+│    "num_messages": 1,
+│    "num_tools": 0
+│  }
+
+└─ Conversation Messages (1)
+   └─ Message 1/1 [user]
+      {
+        "role": "user",
+        "content": "What is the capital of France? Give me a very brief answer."
+      }
+====================================================================================================
+
+{"timestamp": "2025-11-16 18:30:29", "level": "INFO", "logger": "ClaudeAPI.api"}
+
+====================================================================================================
+HTTP REQUEST #1
+====================================================================================================
+
+┌─ HTTP Request Line
+│  POST https://api.anthropic.com/v1/messages
+│  Timestamp: 2025-11-16T18:30:29.570999
+
+├─ Request Headers (19 headers)
+│  host: api.anthropic.com
+│  accept-encoding: gzip, deflate
+│  connection: keep-alive
+│  x-stainless-timeout: 600
+│  accept: application/json
+│  content-type: application/json
+│  user-agent: Anthropic/Python 0.73.0
+│  x-stainless-lang: python
+│  x-stainless-package-version: 0.73.0
+│  x-stainless-os: Windows
+│  x-stainless-arch: other:amd64
+│  x-stainless-runtime: CPython
+│  x-stainless-runtime-version: 3.13.9
+│  x-api-key: ********...WgAA
+│  x-stainless-async: false
+│  anthropic-version: 2023-06-01
+│  x-stainless-retry-count: 0
+│  x-stainless-read-timeout: 600
+│  content-length: 157
+
+└─ Request Body (157 bytes)
+   {
+     "max_tokens": 4096,
+     "messages": [
+       {
+         "role": "user",
+         "content": "What is the capital of France? Give me a very brief answer."
+       }
+     ],
+     "model": "claude-3-5-sonnet-20240620"
+   }
+====================================================================================================
+
+{"timestamp": "2025-11-16 18:30:29", "level": "INFO", "logger": "ClaudeAPI.api"}
+
+====================================================================================================
+HTTP RESPONSE #1
+====================================================================================================
+
+┌─ HTTP Status Line
+│  Status Code: 404
+│  Timestamp: 2025-11-16T18:30:29.731941
+│  Elapsed Time: 0.161s (161ms)
+
+├─ Response Headers (14 headers)
+│  date: Sun, 16 Nov 2025 18:30:29 GMT
+│  content-type: application/json
+│  transfer-encoding: chunked
+│  connection: keep-alive
+│  content-encoding: gzip
+│  x-should-retry: false
+│  request-id: req_011CVC3XXvdkG4bvbje6uL4d
+│  strict-transport-security: max-age=31536000; includeSubDomains; preload
+│  anthropic-organization-id: e6b054e6-d5f7-4c0c-a6ba-e957cccedb38
+│  x-envoy-upstream-service-time: 19
+│  cf-cache-status: DYNAMIC
+│  x-robots-tag: none
+│  server: cloudflare
+│  cf-ray: 99f90f4eb8e4ab0d-LIS
+
+└─ Response Body (141 bytes)
+   {
+     "type": "error",
+     "error": {
+       "type": "not_found_error",
+       "message": "model: claude-3-5-sonnet-20240620"
+     },
+     "request_id": "req_011CVC3XXvdkG4bvbje6uL4d"
+   }
+====================================================================================================
