@@ -7,6 +7,10 @@ import anthropic
 import json
 import inspect
 from typing import Callable, List, Optional, Any, Dict
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 def generate_tool_schema(func: Callable) -> Dict:
