@@ -1,11 +1,13 @@
 """
 Comprehensive logging utility for Claude API interactions.
-Logs all requests, responses, tool calls, and conversation flow.
+Logs complete request-response cycles with HTTP details and tool executions.
 """
 
 import logging
 import json
-from typing import Any, Dict, List
+import time
+import httpx
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
@@ -13,7 +15,7 @@ import anthropic
 
 
 class APILogger:
-    """Logger for tracing Claude API interactions with organized file structure."""
+    """Logger for tracing Claude API interactions with complete request-response cycles."""
 
     def __init__(self, name: str = "ClaudeAPI", level: int = logging.DEBUG, log_dir: str = "logs"):
         """
@@ -36,9 +38,13 @@ class APILogger:
         self.log_dir.mkdir(exist_ok=True)
 
         # Subdirectories for organized logs
-        (self.log_dir / "api").mkdir(exist_ok=True)
+        (self.log_dir / "cycles").mkdir(exist_ok=True)
         (self.log_dir / "tools").mkdir(exist_ok=True)
         (self.log_dir / "errors").mkdir(exist_ok=True)
+
+        # Cycle tracking
+        self.cycle_count = 0
+        self.current_cycle = None
 
         # Console handler with detailed formatting
         console_handler = logging.StreamHandler()
@@ -70,16 +76,16 @@ class APILogger:
         main_handler.setFormatter(file_formatter)
         self.logger.addHandler(main_handler)
 
-        # API-specific log file (requests/responses)
-        api_log = self.log_dir / "api" / "api_calls.log"
-        self.api_handler = RotatingFileHandler(
-            api_log,
+        # Complete cycles log file (requests/responses/tools)
+        cycles_log = self.log_dir / "cycles" / "complete_cycles.log"
+        self.cycles_handler = RotatingFileHandler(
+            cycles_log,
             maxBytes=10*1024*1024,
             backupCount=5,
             encoding='utf-8'
         )
-        self.api_handler.setLevel(logging.INFO)
-        self.api_handler.setFormatter(file_formatter)
+        self.cycles_handler.setLevel(logging.INFO)
+        self.cycles_handler.setFormatter(file_formatter)
 
         # Tool execution log file
         tools_log = self.log_dir / "tools" / "tool_executions.log"
@@ -120,7 +126,7 @@ class APILogger:
         self.logger.info(f"{'='*100}")
         self.logger.info(f"Log directory: {self.log_dir.absolute()}")
         self.logger.info(f"  - Main log: claude_complete.log")
-        self.logger.info(f"  - API calls: api/api_calls.log")
+        self.logger.info(f"  - Complete cycles: cycles/complete_cycles.log")
         self.logger.info(f"  - Tool executions: tools/tool_executions.log")
         self.logger.info(f"  - Errors: errors/errors.log")
         self.logger.info(f"  - Session log: session_{session_timestamp}.log")
@@ -173,6 +179,117 @@ class APILogger:
 
         return serialized
 
+    def start_cycle(self):
+        """Start a new request-response cycle."""
+        self.cycle_count += 1
+        self.current_cycle = {
+            "cycle_number": self.cycle_count,
+            "start_time": time.time(),
+            "http_request": None,
+            "http_response": None,
+            "api_request": None,
+            "api_response": None,
+            "tools_executed": [],
+            "errors": []
+        }
+
+    def end_cycle(self):
+        """End the current cycle and log complete information."""
+        if not self.current_cycle:
+            return
+
+        self.current_cycle["end_time"] = time.time()
+        self.current_cycle["total_time"] = self.current_cycle["end_time"] - self.current_cycle["start_time"]
+
+        # Log the complete cycle
+        self._log_complete_cycle()
+
+        # Reset current cycle
+        self.current_cycle = None
+
+    def _log_complete_cycle(self):
+        """Log a complete request-response cycle with all details."""
+        cycle = self.current_cycle
+        separator = "=" * 100
+
+        log_message = [
+            f"\n{separator}",
+            f"COMPLETE CYCLE #{cycle['cycle_number']}",
+            f"{separator}",
+            f"Total Duration: {cycle['total_time']:.3f}s ({cycle['total_time']*1000:.0f}ms)",
+            f"Timestamp: {datetime.fromtimestamp(cycle['start_time']).isoformat()}",
+            f"{separator}\n"
+        ]
+
+        # HTTP Request
+        if cycle['http_request']:
+            req = cycle['http_request']
+            log_message.append("┌─ HTTP REQUEST")
+            log_message.append(f"│  {req['method']} {req['url']}")
+            log_message.append(f"│  Headers: {len(req['headers'])} headers")
+            if req.get('body'):
+                log_message.append(f"│  Body: {len(req['body'])} bytes")
+            log_message.append("│")
+
+        # API Request
+        if cycle['api_request']:
+            req = cycle['api_request']
+            log_message.append("├─ API REQUEST")
+            log_message.append(f"│  Model: {req['model']}")
+            log_message.append(f"│  Messages: {req['num_messages']}")
+            log_message.append(f"│  Tools: {req['num_tools']}")
+            log_message.append(f"│  Max Tokens: {req['max_tokens']}")
+            log_message.append("│")
+
+        # HTTP Response
+        if cycle['http_response']:
+            resp = cycle['http_response']
+            log_message.append("├─ HTTP RESPONSE")
+            log_message.append(f"│  Status: {resp['status_code']}")
+            log_message.append(f"│  Duration: {resp['elapsed_time']:.3f}s")
+            if resp.get('body'):
+                log_message.append(f"│  Body: {len(resp['body'])} bytes")
+            log_message.append("│")
+
+        # API Response
+        if cycle['api_response']:
+            resp = cycle['api_response']
+            log_message.append("├─ API RESPONSE")
+            log_message.append(f"│  ID: {resp['id']}")
+            log_message.append(f"│  Stop Reason: {resp['stop_reason']}")
+            log_message.append(f"│  Content Blocks: {resp['num_content_blocks']}")
+            if resp.get('usage'):
+                usage = resp['usage']
+                log_message.append(f"│  Tokens - Input: {usage['input_tokens']}, Output: {usage['output_tokens']}")
+            log_message.append("│")
+
+        # Tools Executed
+        if cycle['tools_executed']:
+            log_message.append(f"└─ TOOLS EXECUTED ({len(cycle['tools_executed'])})")
+            for i, tool in enumerate(cycle['tools_executed'], 1):
+                prefix = "   ├─" if i < len(cycle['tools_executed']) else "   └─"
+                log_message.append(f"{prefix} {tool['name']}")
+                log_message.append(f"   │  Status: {tool['status']}")
+                if tool['status'] == 'success':
+                    log_message.append(f"   │  Input: {tool['input']}")
+                else:
+                    log_message.append(f"   │  Error: {tool.get('error', 'Unknown error')}")
+        else:
+            log_message.append("└─ NO TOOLS EXECUTED")
+
+        log_message.append(f"\n{separator}\n")
+
+        full_log = "\n".join(log_message)
+        self.logger.info(full_log)
+
+        # Also log to cycles-specific handler
+        cycles_logger = logging.getLogger(f"{self.logger.name}.cycles")
+        if self.cycles_handler not in cycles_logger.handlers:
+            cycles_logger.addHandler(self.cycles_handler)
+        cycles_logger.setLevel(logging.INFO)
+        cycles_logger.propagate = False
+        cycles_logger.info(full_log)
+
     def log_api_request(self, model: str, messages: List[Dict], tools: List[Dict] = None, **kwargs):
         """
         Log an API request to Claude.
@@ -193,6 +310,10 @@ class APILogger:
             "num_messages": len(messages),
             "num_tools": len(tools) if tools else 0
         }
+
+        # Store in current cycle
+        if self.current_cycle:
+            self.current_cycle['api_request'] = log_data
 
         separator = "=" * 80
         header = f"{separator}\nAPI REQUEST #{self.request_count}\n{separator}"
@@ -223,15 +344,8 @@ class APILogger:
 
         full_log = "\n".join(log_message)
 
-        # Log to main logger (goes to all handlers)
+        # Log to main logger only
         self.logger.info(full_log)
-
-        # Also log to API-specific handler
-        api_logger = logging.getLogger(f"{self.logger.name}.api")
-        api_logger.addHandler(self.api_handler)
-        api_logger.setLevel(logging.INFO)
-        api_logger.propagate = False
-        api_logger.info(full_log)
 
     def log_api_response(self, response: anthropic.types.Message):
         """
@@ -251,6 +365,7 @@ class APILogger:
             "stop_reason": response.stop_reason,
             "stop_sequence": response.stop_sequence,
             "type": response.type,
+            "num_content_blocks": len(response.content)
         }
 
         # Usage statistics
@@ -261,6 +376,10 @@ class APILogger:
                 "cache_creation_input_tokens": getattr(response.usage, 'cache_creation_input_tokens', None),
                 "cache_read_input_tokens": getattr(response.usage, 'cache_read_input_tokens', None)
             }
+
+        # Store in current cycle
+        if self.current_cycle:
+            self.current_cycle['api_response'] = response_data
 
         # Build hierarchical log message
         log_message = [header]
@@ -294,16 +413,8 @@ class APILogger:
 
         full_log = "\n".join(log_message)
 
-        # Log to main logger
+        # Only log to main logger (detailed view)
         self.logger.info(full_log)
-
-        # Also log to API-specific handler
-        api_logger = logging.getLogger(f"{self.logger.name}.api")
-        if self.api_handler not in api_logger.handlers:
-            api_logger.addHandler(self.api_handler)
-        api_logger.setLevel(logging.INFO)
-        api_logger.propagate = False
-        api_logger.info(full_log)
 
     def log_tool_execution(self, tool_name: str, tool_input: Dict, tool_output: Any, error: str = None):
         """
@@ -320,11 +431,17 @@ class APILogger:
         header = f"\n{separator}\nTOOL EXECUTION: {tool_name} [{status}]\n{separator}"
 
         execution_data = {
-            "tool": tool_name,
+            "name": tool_name,
             "input": tool_input,
+            "output": tool_output,
             "timestamp": datetime.now().isoformat(),
-            "status": "error" if error else "success"
+            "status": "error" if error else "success",
+            "error": error
         }
+
+        # Store in current cycle
+        if self.current_cycle:
+            self.current_cycle['tools_executed'].append(execution_data)
 
         # Build hierarchical log message
         log_message = [header]
@@ -405,6 +522,15 @@ class APILogger:
             headers: Request headers
             body: Request body (if any)
         """
+        # Store in current cycle
+        if self.current_cycle:
+            self.current_cycle['http_request'] = {
+                "method": method,
+                "url": url,
+                "headers": headers,
+                "body": body
+            }
+
         separator = "=" * 100
         header = f"\n{separator}\nHTTP REQUEST #{request_id}\n{separator}"
 
@@ -445,13 +571,6 @@ class APILogger:
         full_log = "\n".join(log_message)
         self.logger.info(full_log)
 
-        # Also log to API-specific handler
-        api_logger = logging.getLogger(f"{self.logger.name}.api")
-        if self.api_handler not in api_logger.handlers:
-            api_logger.addHandler(self.api_handler)
-        api_logger.setLevel(logging.INFO)
-        api_logger.propagate = False
-        api_logger.info(full_log)
 
     def log_http_response(self, request_id: int, status_code: int, headers: dict, body: str = None, elapsed_time: float = None):
         """
@@ -464,6 +583,15 @@ class APILogger:
             body: Response body (if any)
             elapsed_time: Request duration in seconds
         """
+        # Store in current cycle
+        if self.current_cycle:
+            self.current_cycle['http_response'] = {
+                "status_code": status_code,
+                "headers": headers,
+                "body": body,
+                "elapsed_time": elapsed_time
+            }
+
         separator = "=" * 100
         header = f"\n{separator}\nHTTP RESPONSE #{request_id}\n{separator}"
 
@@ -503,13 +631,6 @@ class APILogger:
         full_log = "\n".join(log_message)
         self.logger.info(full_log)
 
-        # Also log to API-specific handler
-        api_logger = logging.getLogger(f"{self.logger.name}.api")
-        if self.api_handler not in api_logger.handlers:
-            api_logger.addHandler(self.api_handler)
-        api_logger.setLevel(logging.INFO)
-        api_logger.propagate = False
-        api_logger.info(full_log)
 
     def log_http_error(self, request_id: int, error: str, elapsed_time: float = None):
         """
@@ -520,6 +641,14 @@ class APILogger:
             error: Error message
             elapsed_time: Time elapsed before error
         """
+        # Store in current cycle
+        if self.current_cycle:
+            self.current_cycle['errors'].append({
+                "type": "http_error",
+                "message": error,
+                "elapsed_time": elapsed_time
+            })
+
         separator = "=" * 100
         header = f"\n{separator}\nHTTP ERROR #{request_id}\n{separator}"
 
@@ -533,3 +662,203 @@ class APILogger:
 
         full_log = "\n".join(log_message)
         self.logger.error(full_log)
+
+
+class LoggingTransport(httpx.BaseTransport):
+    """Custom HTTP transport that logs all requests and responses."""
+
+    def __init__(self, transport: httpx.BaseTransport, logger=None):
+        """
+        Initialize logging transport wrapper.
+
+        Args:
+            transport: Base httpx transport to wrap
+            logger: APILogger instance for logging
+        """
+        self.transport = transport
+        self.logger = logger
+        self.request_count = 0
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        """
+        Handle HTTP request with logging.
+
+        Args:
+            request: HTTP request
+
+        Returns:
+            HTTP response
+        """
+        self.request_count += 1
+        request_id = self.request_count
+
+        # Don't start cycle here - let chat.py control it
+
+        # Capture request start time
+        start_time = time.time()
+
+        # Log the raw HTTP request
+        if self.logger:
+            self.logger.log_http_request(
+                request_id=request_id,
+                method=request.method,
+                url=str(request.url),
+                headers=dict(request.headers),
+                body=request.content.decode('utf-8') if request.content else None
+            )
+
+        # Execute the actual request
+        try:
+            response = self.transport.handle_request(request)
+
+            # Read the response content (this makes it available and allows re-reading)
+            response.read()
+
+            # Capture request end time
+            elapsed_time = time.time() - start_time
+
+            # Log the raw HTTP response
+            if self.logger:
+                self.logger.log_http_response(
+                    request_id=request_id,
+                    status_code=response.status_code,
+                    headers=dict(response.headers),
+                    body=response.content.decode('utf-8') if response.content else None,
+                    elapsed_time=elapsed_time
+                )
+
+            return response
+
+        except Exception as e:
+            elapsed_time = time.time() - start_time
+
+            # Log the error
+            if self.logger:
+                self.logger.log_http_error(
+                    request_id=request_id,
+                    error=str(e),
+                    elapsed_time=elapsed_time
+                )
+
+            raise
+
+
+class AsyncLoggingTransport(httpx.AsyncBaseTransport):
+    """Async version of logging transport for async clients."""
+
+    def __init__(self, transport: httpx.AsyncBaseTransport, logger=None):
+        """
+        Initialize async logging transport wrapper.
+
+        Args:
+            transport: Base httpx async transport to wrap
+            logger: APILogger instance for logging
+        """
+        self.transport = transport
+        self.logger = logger
+        self.request_count = 0
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        """
+        Handle async HTTP request with logging.
+
+        Args:
+            request: HTTP request
+
+        Returns:
+            HTTP response
+        """
+        self.request_count += 1
+        request_id = self.request_count
+
+        # Don't start cycle here - let chat.py control it
+
+        # Capture request start time
+        start_time = time.time()
+
+        # Log the raw HTTP request
+        if self.logger:
+            self.logger.log_http_request(
+                request_id=request_id,
+                method=request.method,
+                url=str(request.url),
+                headers=dict(request.headers),
+                body=request.content.decode('utf-8') if request.content else None
+            )
+
+        # Execute the actual request
+        try:
+            response = await self.transport.handle_async_request(request)
+
+            # Read the response content (this makes it available and allows re-reading)
+            await response.aread()
+
+            # Capture request end time
+            elapsed_time = time.time() - start_time
+
+            # Log the raw HTTP response
+            if self.logger:
+                self.logger.log_http_response(
+                    request_id=request_id,
+                    status_code=response.status_code,
+                    headers=dict(response.headers),
+                    body=response.content.decode('utf-8') if response.content else None,
+                    elapsed_time=elapsed_time
+                )
+
+            return response
+
+        except Exception as e:
+            elapsed_time = time.time() - start_time
+
+            # Log the error
+            if self.logger:
+                self.logger.log_http_error(
+                    request_id=request_id,
+                    error=str(e),
+                    elapsed_time=elapsed_time
+                )
+
+            raise
+
+
+def create_logging_client(logger=None, **client_kwargs) -> httpx.Client:
+    """
+    Create an httpx client with logging enabled.
+
+    Args:
+        logger: APILogger instance
+        **client_kwargs: Additional arguments for httpx.Client
+
+    Returns:
+        Configured httpx.Client with logging
+    """
+    # Create base transport
+    base_transport = httpx.HTTPTransport(**client_kwargs.pop('transport', {}))
+
+    # Wrap with logging transport
+    logging_transport = LoggingTransport(base_transport, logger=logger)
+
+    # Create client with logging transport
+    return httpx.Client(transport=logging_transport, **client_kwargs)
+
+
+def create_async_logging_client(logger=None, **client_kwargs) -> httpx.AsyncClient:
+    """
+    Create an async httpx client with logging enabled.
+
+    Args:
+        logger: APILogger instance
+        **client_kwargs: Additional arguments for httpx.AsyncClient
+
+    Returns:
+        Configured httpx.AsyncClient with logging
+    """
+    # Create base transport
+    base_transport = httpx.AsyncHTTPTransport(**client_kwargs.pop('transport', {}))
+
+    # Wrap with logging transport
+    logging_transport = AsyncLoggingTransport(base_transport, logger=logger)
+
+    # Create client with logging transport
+    return httpx.AsyncClient(transport=logging_transport, **client_kwargs)

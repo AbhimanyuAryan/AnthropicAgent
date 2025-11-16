@@ -8,8 +8,7 @@ import json
 import inspect
 from typing import Callable, List, Optional, Any, Dict
 from dotenv import load_dotenv
-from logger import APILogger
-from http_logger import create_logging_client
+from logger import APILogger, create_logging_client
 
 # Load environment variables from .env file
 load_dotenv()
@@ -116,8 +115,9 @@ class Chat:
         """
         self.h.append({"role": "user", "content": user_message})
 
-        # Log the API request
+        # Start a new cycle and log the API request
         if self.logger:
+            self.logger.start_cycle()
             self.logger.log_api_request(
                 model=self.model,
                 messages=self.h,
@@ -135,6 +135,8 @@ class Chat:
         # Log the API response
         if self.logger:
             self.logger.log_api_response(response)
+            # End the cycle for complete logging
+            self.logger.end_cycle()
 
         self.h.append({
             "role": "assistant",
@@ -203,8 +205,9 @@ class Chat:
                 "content": tool_results
             })
 
-            # Log the next API request
+            # Start a new cycle and log the next API request
             if self.logger:
+                self.logger.start_cycle()
                 self.logger.log_api_request(
                     model=self.model,
                     messages=self.h,
@@ -223,6 +226,8 @@ class Chat:
             # Log the API response
             if self.logger:
                 self.logger.log_api_response(response)
+                # End the cycle for complete logging
+                self.logger.end_cycle()
 
             self.h.append({
                 "role": "assistant",

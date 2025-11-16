@@ -238,6 +238,46 @@ for response in chat.toolloop("What's in order O1?"):
    ANTHROPIC_API_KEY=your-api-key-here
    ```
 
+### Running the Demo with Comprehensive Logging
+
+To run the demo with full logging of all API interactions:
+
+```bash
+./venv/Scripts/python demo.py
+```
+
+Or on Windows Command Prompt/PowerShell:
+```cmd
+venv\Scripts\python demo.py
+```
+
+This will:
+- Run three demos: simple weather, tool loop, and orders management
+- Generate complete cycle logs with full HTTP and API details
+- Show tool executions with inputs/outputs
+- Track timing for each request-response cycle
+
+**Logs are saved to:**
+```
+logs/
+  ├── claude_complete.log          (Everything with detailed view)
+  ├── session_YYYYMMDD_HHMMSS.log  (Current session only)
+  ├── cycles/
+  │   └── complete_cycles.log      (Complete request-response cycles)
+  ├── tools/
+  │   └── tool_executions.log      (Tool executions only)
+  └── errors/
+      └── errors.log               (Errors only)
+```
+
+**Each cycle log includes:**
+- HTTP Request (method, URL, headers, body)
+- API Request (model, messages, tools, parameters)
+- HTTP Response (status code, duration, body)
+- API Response (content blocks, token usage)
+- Tool Executions (inputs, outputs, errors)
+- Total cycle duration
+
 ### Basic Usage
 
 #### Simple Chat
@@ -313,9 +353,18 @@ for response in chat.toolloop("complex task", max_steps=5):
 ```
 AnthropicAgent/
 ├── chat.py          # Main Chat class implementation
+├── logger.py        # Comprehensive API logging system
+├── demo.py          # Demo with three example scenarios
+├── tools.py         # Example tool functions
 ├── orders.py        # Sample data for demos
 ├── requirements.txt # Python dependencies
 ├── .env            # API key (create this)
+├── logs/            # Generated log files
+│   ├── claude_complete.log
+│   ├── session_*.log
+│   ├── cycles/complete_cycles.log
+│   ├── tools/tool_executions.log
+│   └── errors/errors.log
 └── README.md       # This file
 ```
 
