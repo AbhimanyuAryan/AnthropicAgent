@@ -8,6 +8,7 @@ import json
 import inspect
 from typing import Callable, List, Optional, Any, Dict
 from dotenv import load_dotenv
+from logger import APILogger
 
 # Load environment variables from .env file
 load_dotenv()
@@ -66,19 +67,21 @@ class Chat:
     Chat class that maintains conversation history and supports tool execution.
     """
 
-    def __init__(self, model: str = "claude-sonnet-4-5-20250929", tools: Optional[List[Callable]] = None):
+    def __init__(self, model: str = "claude-sonnet-4-5-20250929", tools: Optional[List[Callable]] = None, enable_logging: bool = True):
         """
         Initialize Chat instance.
 
         Args:
             model: Claude model to use
             tools: List of tool functions to make available
+            enable_logging: Enable comprehensive API logging
         """
         self.c = anthropic.Anthropic()
         self.model = model
         self.h = []  # Conversation history
         self.tools = {}
         self.tool_schemas = []
+        self.logger = APILogger() if enable_logging else None
 
         if tools:
             for tool in tools:
@@ -103,12 +106,25 @@ class Chat:
         """
         self.h.append({"role": "user", "content": user_message})
 
+        # Log the API request
+        if self.logger:
+            self.logger.log_api_request(
+                model=self.model,
+                messages=self.h,
+                tools=self.tool_schemas if self.tool_schemas else None,
+                **kwargs
+            )
+
         response = self.c.messages.create(
             model=self.model,
             max_tokens=kwargs.get('max_tokens', 4096),
             messages=self.h,
             tools=self.tool_schemas if self.tool_schemas else anthropic.NOT_GIVEN
         )
+
+        # Log the API response
+        if self.logger:
+            self.logger.log_api_response(response)
 
         self.h.append({
             "role": "assistant",
@@ -152,16 +168,39 @@ class Chat:
                     try:
                         result = self.tools[tool_name](**tool_input)
                         tool_results.append(mk_toolres(tool_call.id, result))
+
+                        # Log successful tool execution
+                        if self.logger:
+                            self.logger.log_tool_execution(tool_name, tool_input, result)
                     except Exception as e:
-                        tool_results.append(mk_toolres(tool_call.id, f"Error: {str(e)}"))
+                        error_msg = f"Error: {str(e)}"
+                        tool_results.append(mk_toolres(tool_call.id, error_msg))
+
+                        # Log failed tool execution
+                        if self.logger:
+                            self.logger.log_tool_execution(tool_name, tool_input, None, error=str(e))
                 else:
-                    tool_results.append(mk_toolres(tool_call.id, f"Error: Unknown tool {tool_name}"))
+                    error_msg = f"Error: Unknown tool {tool_name}"
+                    tool_results.append(mk_toolres(tool_call.id, error_msg))
+
+                    # Log unknown tool
+                    if self.logger:
+                        self.logger.log_tool_execution(tool_name, tool_input, None, error=f"Unknown tool")
 
             # Add tool results to history
             self.h.append({
                 "role": "user",
                 "content": tool_results
             })
+
+            # Log the next API request
+            if self.logger:
+                self.logger.log_api_request(
+                    model=self.model,
+                    messages=self.h,
+                    tools=self.tool_schemas if self.tool_schemas else None,
+                    max_tokens=4096
+                )
 
             # Get next response
             response = self.c.messages.create(
@@ -170,6 +209,10 @@ class Chat:
                 messages=self.h,
                 tools=self.tool_schemas if self.tool_schemas else anthropic.NOT_GIVEN
             )
+
+            # Log the API response
+            if self.logger:
+                self.logger.log_api_response(response)
 
             self.h.append({
                 "role": "assistant",
