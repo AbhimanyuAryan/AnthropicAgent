@@ -1,6 +1,6 @@
-# 🤖 AI Agent Framework - Built from Scratch
+# 🤖 AI Agent Framework Built on Claude API
 
-An **AI agent framework** built from scratch using Anthropic's Claude API. This enables Claude to automatically execute tools (functions) in a conversation loop, creating truly autonomous agents.
+A custom **AI agent framework** implementation using Anthropic's Claude API. This enables Claude to automatically execute tools (functions) in a conversation loop, creating truly autonomous agents.
 
 ---
 
